@@ -333,7 +333,7 @@ public class UDAFCardinalityEstimator implements GenericUDAFResolver2 {
                 ArrayList<Object> result = new ArrayList<Object>();
                 result.add(new Text(ce.name()));
                 long cardinality = ceb.cardinalityEstimator instanceof HyperLogLog
-                        ? ((HyperLogLog) ceb.cardinalityEstimator).cardinality(/* use long-range estimate */ false)
+                        ? ((HyperLogLog) ceb.cardinalityEstimator).cardinality()
                         : ceb.cardinalityEstimator.cardinality();
                 result.add(new LongWritable(cardinality));
                 result.add(new BytesWritable(ceb.cardinalityEstimator.getBytes()));
