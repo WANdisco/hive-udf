@@ -41,8 +41,8 @@ public class UDAFCntBitSet implements GenericUDAFResolver2 {
     }
 
 
-    if((parameters.length > 1) && !parameters[1].getTypeName().equals("int")) {
-      throw new SemanticException("Base could only be int; Got " + parameters[1].getTypeName());
+    if((parameters.length > 1) && !parameters[1].getTypeName().equals("bigint")) {
+      throw new SemanticException("Base could only be bigint; Got " + parameters[1].getTypeName());
     }
 
     if((parameters.length == 3) && !parameters[2].getTypeName().equals("int")) {
@@ -67,7 +67,7 @@ public class UDAFCntBitSet implements GenericUDAFResolver2 {
 		// intermediate results
 		StandardListObjectInspector partialOI;
 
-    private int baseValue = 0;
+    private long baseValue = 0;
     private int baseSize = 0;
 
 		public ObjectInspector init(Mode m, ObjectInspector[] parameters)
@@ -80,7 +80,7 @@ public class UDAFCntBitSet implements GenericUDAFResolver2 {
           throw new HiveException("Base Value must be a constant");
         }
         ConstantObjectInspector baseOI = (ConstantObjectInspector) parameters[1];
-        this.baseValue = ((IntWritable) baseOI.getWritableConstantValue()).get();
+        this.baseValue = ((LongWritable) baseOI.getWritableConstantValue()).get();
 
         if(parameters.length == 3) {
           ConstantObjectInspector sizeOI = (ConstantObjectInspector) parameters[2];
@@ -141,7 +141,8 @@ public class UDAFCntBitSet implements GenericUDAFResolver2 {
 			CntAggregationBuffer ceb = (CntAggregationBuffer) aggregationBuffer;
 			Object x = ObjectInspectorUtils.copyToStandardObject(parameters[0],
 					inputPrimitiveOI, ObjectInspectorCopyOption.JAVA);
-			long value = (Long) x - baseValue;
+
+			long value = Math.abs((Long) x - baseValue);
       ceb.set.set((int) value);
 		}
 
