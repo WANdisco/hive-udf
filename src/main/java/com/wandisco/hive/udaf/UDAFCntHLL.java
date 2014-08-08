@@ -227,7 +227,7 @@ public class UDAFCntHLL implements GenericUDAFResolver2 {
             ICardinality partialEstimator = HyperLogLogPlus.Builder.build(partialBytes.getBytes());
             mergeEstimators(partialEstimator, ceb);
           } catch(IOException e) {
-            throw new HiveException("Failed to extract byte[] during partial termination. ", e);
+            throw new HiveException("Failed to extract byte[] during partial termination: " + e.getMessage(), e);
           }
         }
 
@@ -276,10 +276,10 @@ public class UDAFCntHLL implements GenericUDAFResolver2 {
                     LOG.debug("Aggregation buffer is null, using THAT partial instance. Cardinality result = " + thisEstimatorBuffer.cardinalityEstimator.cardinality());
                 }
                 else {
-                    LOG.debug("Merging estimator instances, with THIS partial result = " + thisEstimatorBuffer.cardinalityEstimator.cardinality() +
-                            " and THAT partial result = " + thatEstimator.cardinality());
+                    //LOG.debug("Merging estimator instances, with THIS partial result = " + thisEstimatorBuffer.cardinalityEstimator.cardinality() +
+                    //        " and THAT partial result = " + thatEstimator.cardinality());
                     thisEstimatorBuffer.cardinalityEstimator = thisEstimatorBuffer.cardinalityEstimator.merge(thatEstimator);
-                    LOG.debug("MERGED partial result = " + thisEstimatorBuffer.cardinalityEstimator.cardinality());
+                    //LOG.debug("MERGED partial result = " + thisEstimatorBuffer.cardinalityEstimator.cardinality());
                 }
             } catch (CardinalityMergeException e) {
                 throw new HiveException("Failed to merge Cardinality Estimator instances due to cardinality error. ", e);
