@@ -119,7 +119,7 @@ public class UDAFCntInt implements GenericUDAFResolver2 {
 		public AggregationBuffer getNewAggregationBuffer() throws HiveException {
 			CntAggregationBuffer ceb = new CntAggregationBuffer();
       ceb.init(baseSize);
-			reset(ceb);
+			//reset(ceb);
 			return ceb;
 		}
 
@@ -220,9 +220,6 @@ public class UDAFCntInt implements GenericUDAFResolver2 {
           hash = new TIntHashSet(size);
         }
       }
-
-
-
 		}
 	}
 }
