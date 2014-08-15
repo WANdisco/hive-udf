@@ -1,6 +1,7 @@
 package com.wandisco.hive.udaf;
 
-import gnu.trove.set.hash.TIntHashSet;
+import com.zaxxer.sparsebits.SparseBitSet;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.Description;
@@ -19,30 +20,33 @@ import org.apache.hadoop.io.LongWritable;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 
-@Description(name = "count_distinct_int", value = "_FUNC_(x) - Distinct count for long values", extended = "Example:"
-		+ "\n> SELECT count_distinct_int(values) FROM src")
-public class UDAFCntInt implements GenericUDAFResolver2 {
+//import java.util.BitSet;
 
-	static final Log LOG = LogFactory.getLog(UDAFCntInt.class.getName());
+@Description(name = "count_distinct_bitset", value = "_FUNC_(x) - Distinct count for long values", extended = "Example:"
+		+ "\n> SELECT count_distinct_bitset(values) FROM src")
+public class UDAFCntSparseBitSet implements GenericUDAFResolver2 {
+
+	static final Log LOG = LogFactory.getLog(UDAFCntSparseBitSet.class.getName());
+  //public static final int MAX_VALUE = 100000000;
+  //public static final int NUM_LONGS = MAX_VALUE >> 6;
 
 	@Override
 	public GenericUDAFEvaluator getEvaluator(GenericUDAFParameterInfo info)
 			throws SemanticException {
 		TypeInfo[] parameters = info.getParameters();
 
-    if (!parameters[0].getTypeName().equals("bigint") && !parameters[0].getTypeName().equals("int")) {
-      throw new SemanticException("count_distinct_int UDAF only accepts int or bigint as first parameter");
+    if(!parameters[0].getTypeName().equals("bigint")) {
+      throw new SemanticException("count_distinct_bitset UDAF only accepts bigint as first parameter");
     }
 
 
-    if ((parameters.length > 1) && !parameters[1].getTypeName().equals("bigint") && !parameters[1].getTypeName().equals("int")) {
-      throw new SemanticException("Base could only be bigint; Got " + parameters[1].getTypeName());
+    if((parameters.length > 1) && !parameters[1].getTypeName().equals("bigint") && !parameters[1].getTypeName().equals("int")) {
+      throw new SemanticException("Base could only be int or bigint; Got " + parameters[1].getTypeName());
     }
 
-    if ((parameters.length == 3) && !parameters[2].getTypeName().equals("int")) {
+    if((parameters.length == 3) && !parameters[2].getTypeName().equals("int")) {
       throw new SemanticException("Size could only be int; Got " + parameters[2].getTypeName());
     }
 
@@ -72,14 +76,14 @@ public class UDAFCntInt implements GenericUDAFResolver2 {
 			super.init(m, parameters);
 
 
-      if (parameters.length > 1) {
-        if (!( parameters[1] instanceof ConstantObjectInspector ) ) {
+      if(parameters.length > 1) {
+        if(!( parameters[1] instanceof ConstantObjectInspector ) ) {
           throw new HiveException("Base Value must be a constant");
         }
         ConstantObjectInspector baseOI = (ConstantObjectInspector) parameters[1];
         this.baseValue = ((LongWritable) baseOI.getWritableConstantValue()).get();
 
-        if (parameters.length == 3) {
+        if(parameters.length == 3) {
           ConstantObjectInspector sizeOI = (ConstantObjectInspector) parameters[2];
           this.baseSize = ((IntWritable) sizeOI.getWritableConstantValue()).get();
         } else {
@@ -119,14 +123,14 @@ public class UDAFCntInt implements GenericUDAFResolver2 {
 		public AggregationBuffer getNewAggregationBuffer() throws HiveException {
 			CntAggregationBuffer ceb = new CntAggregationBuffer();
       ceb.init(baseSize);
-			//reset(ceb);
+			reset(ceb);
 			return ceb;
 		}
 
 		@Override
 		public void reset(AggregationBuffer aggregationBuffer)
 				throws HiveException {
-			((CntAggregationBuffer) aggregationBuffer).hash.clear();
+			((CntAggregationBuffer) aggregationBuffer).set.clear();
 		}
 
 		@Override
@@ -140,7 +144,9 @@ public class UDAFCntInt implements GenericUDAFResolver2 {
 					inputPrimitiveOI, ObjectInspectorCopyOption.JAVA);
 
 			long value = Math.abs((Long) x - baseValue);
-      ceb.hash.add((int) value);
+      if(value > Integer.MAX_VALUE)
+        value = Integer.MAX_VALUE-1;
+      ceb.set.set((int) value);
 		}
 
 		@Override
@@ -150,7 +156,7 @@ public class UDAFCntInt implements GenericUDAFResolver2 {
 			ByteArrayOutputStream b = new ByteArrayOutputStream();
 			try {
 				ObjectOutputStream o = new ObjectOutputStream(b);
-				o.writeObject(ceb.hash);
+				o.writeObject(ceb.set);
 			} catch (IOException e) {
 				throw new HiveException(e.getMessage());
 			}
@@ -167,7 +173,7 @@ public class UDAFCntInt implements GenericUDAFResolver2 {
 				return;
 			}
 			CntAggregationBuffer ceb = (CntAggregationBuffer) aggregationBuffer;
-			TIntHashSet hh = null;
+			SparseBitSet mSet = null;
 
 			try {
 				List<BytesWritable> partialResult = (List<BytesWritable>) partialOI
@@ -176,50 +182,75 @@ public class UDAFCntInt implements GenericUDAFResolver2 {
 				ByteArrayInputStream bais = new ByteArrayInputStream(
 						partialBytes.getBytes());
 				ObjectInputStream oi = new ObjectInputStream(bais);
-        hh = (TIntHashSet)oi.readObject();
+        mSet = (SparseBitSet)oi.readObject();
 			} catch (Exception e) {
 				throw new HiveException(e.getMessage());
 			}
-      mergeHashSets(hh, ceb);
+      ceb.set.or(mSet);
 		}
-
-
-    private void mergeHashSets(TIntHashSet hh, CntAggregationBuffer ceb) {
-      if (ceb.hash.size() == 0) {
-        ceb.hash = hh;
-        return;
-      }
-      if (ceb.hash.size() > hh.size()) {
-        ceb.hash.addAll(hh);
-      } else {
-        hh.addAll(ceb.hash);
-        ceb.hash = hh;
-      }
-    }
-
 
 		@Override
 		public Object terminate(AggregationBuffer aggregationBuffer)
 				throws HiveException {
 			CntAggregationBuffer ceb = (CntAggregationBuffer) aggregationBuffer;
-			if (ceb.hash == null) {
+			if (ceb.set == null) {
 				return null;
 			}
-			return new LongWritable(ceb.hash.size());
+			return new LongWritable(ceb.set.cardinality());
 		}
 
 		static class CntAggregationBuffer implements AggregationBuffer {
 			//TLongHashSet hash = new TLongHashSet();
 
-      TIntHashSet hash = null;
+      SparseBitSet set = null;
 
       void init(int size) {
-        if (size == 0) {
-          hash = new TIntHashSet();
+        if(size == 0) {
+          set = new SparseBitSet();
         } else {
-          hash = new TIntHashSet(size);
+          set = new SparseBitSet(size);
         }
       }
+
+
+/*
+      long [] words = new long[NUM_LONGS];
+
+
+
+      void setBit(int bit) throws SemanticException {
+        if(bit > MAX_VALUE)
+          throw new SemanticException("Value exceeded max value = " + bit);
+        int widx = bit >> 6;
+        words[widx] |= (1L << bit);
+      }
+
+      boolean getBit(int bit) throws SemanticException {
+        int widx = bit >> 6;
+        return (widx < MAX_VALUE)
+            && ((words[widx] & (1L << bit)) != 0);
+      }
+
+      void mergeSets(long[] mWords) {
+        for(int i=0; i< NUM_LONGS; ++i) {
+          words[i] |= mWords[i];
+        }
+      }
+
+      int cardinality() {
+        int sum = 0;
+        for(int i=0; i< NUM_LONGS; ++i) {
+          sum += Long.bitCount(words[i]);
+        }
+        return sum;
+      }
+
+      void clear() {
+        for(int i=0; i < NUM_LONGS; ++i) {
+          words[i] = 0;
+        }
+      }
+*/
 		}
 	}
 }

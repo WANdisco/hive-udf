@@ -13,17 +13,24 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <hadoop.version>0.20.2</hadoop.version>
-      <hive.version>0.9.0</hive.version>
+      <hive.version>0.11.0</hive.version>
   </properties>
 
   <dependencies>
-<dependency>
-	<groupId>net.sf.trove4j</groupId>
-	<artifactId>trove4j</artifactId>
-	<version>3.0.3</version>
-          <type>jar</type>
-          <scope>compile</scope>
-</dependency>
+    <dependency>
+      <groupId>net.sf.trove4j</groupId>
+      <artifactId>trove4j</artifactId>
+      <version>3.0.3</version>
+      <type>jar</type>
+      <scope>compile</scope>
+    </dependency>
+
+   <dependency>
+     <groupId>com.zaxxer</groupId>
+     <artifactId>SparseBitSet</artifactId>
+     <version>1.0</version>
+     <scope>compile</scope>
+   </dependency>
             
       <!-- Hadoop -->
       <dependency>
