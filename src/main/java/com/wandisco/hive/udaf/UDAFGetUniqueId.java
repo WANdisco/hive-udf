@@ -6,12 +6,14 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
+import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFResolver2;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils.ObjectInspectorCopyOption;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.IntWritable;
@@ -21,9 +23,9 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-@Description(name = "gen_unique_id", value = "_FUNC_(x) - Generate unique long ID for given field in the table", extended = "Example:"
-		+ "\n> SELECT gen_unique_id(values) FROM src")
-public class UDAFGetUniqueId implements GenericUDAFResolver2 {
+@Description(name = "get_unique_id", value = "_FUNC_(x) - Generate unique long ID for given field in the table", extended = "Example:"
+		+ "\n> SELECT get_unique_id(values) FROM src")
+public class UDAFGetUniqueId extends AbstractGenericUDAFResolver { //implements GenericUDAFResolver2 {
 
 	static final Log LOG = LogFactory.getLog(UDAFGetUniqueId.class.getName());
 
@@ -33,7 +35,7 @@ public class UDAFGetUniqueId implements GenericUDAFResolver2 {
 		TypeInfo[] parameters = info.getParameters();
 
     if (!parameters[0].getTypeName().equals("bigint") && !parameters[0].getTypeName().equals("int")) {
-      throw new SemanticException("gen_unique_id UDAF only accepts int or bigint as first parameter");
+      throw new SemanticException("get_unique_id UDAF only accepts int or bigint as first parameter");
     }
 
     if ((parameters.length > 1) && !parameters[1].getTypeName().equals("string")) {
@@ -53,38 +55,34 @@ public class UDAFGetUniqueId implements GenericUDAFResolver2 {
 		return new CountEvaluator();
 	}
 
+
 	public static class CountEvaluator extends GenericUDAFEvaluator {
 		PrimitiveObjectInspector inputPrimitiveOI;
 
 		// intermediate results
 		StandardListObjectInspector partialOI;
 
+    String imsi = null;
+
+
 		public ObjectInspector init(Mode m, ObjectInspector[] parameters)
 				throws HiveException {
 			super.init(m, parameters);
 
 
-      if (parameters.length > 1) {
-        if (!( parameters[1] instanceof ConstantObjectInspector ) ) {
-          throw new HiveException("Base Value must be a constant");
+      if (parameters.length == 2) {
+        if (!( parameters[1] instanceof StringObjectInspector) ) {
+          throw new HiveException("Base Value must be a string");
         }
-        ConstantObjectInspector baseOI = (ConstantObjectInspector) parameters[1];
-        this.baseValue = ((StringWritable) baseOI.getWritableConstantValue()).get();
+        StringObjectInspector soi = (StringObjectInspector) parameters[1];
+        this.imsi = (String)soi.getPrimitiveJavaObject(parameters[1]);
 
-        if (parameters.length == 3) {
-          ConstantObjectInspector sizeOI = (ConstantObjectInspector) parameters[2];
-          this.baseSize = ((IntWritable) sizeOI.getWritableConstantValue()).get();
-        } else {
-          this.baseSize = 0;
-        }
       } else {
-        this.baseValue = 0;
-        this.baseSize = 0;
+        throw new HiveException("Only 2 parameters are supported");
       }
 
 
 			if (m == Mode.PARTIAL1 || m == Mode.COMPLETE) {
-				assert (parameters.length == 1);
 				ObjectInspector.Category cat = parameters[0].getCategory();
 				switch (cat) {
 				case PRIMITIVE:
@@ -110,7 +108,7 @@ public class UDAFGetUniqueId implements GenericUDAFResolver2 {
 		@Override
 		public AggregationBuffer getNewAggregationBuffer() throws HiveException {
 			CntAggregationBuffer ceb = new CntAggregationBuffer();
-      ceb.init(baseSize);
+      ceb.init();
 			//reset(ceb);
 			return ceb;
 		}
@@ -131,8 +129,8 @@ public class UDAFGetUniqueId implements GenericUDAFResolver2 {
 			Object x = ObjectInspectorUtils.copyToStandardObject(parameters[0],
 					inputPrimitiveOI, ObjectInspectorCopyOption.JAVA);
 
-			long value = Math.abs((Long) x - baseValue);
-      ceb.hash.add((int) value);
+			//long value = Math.abs((Long) x - baseValue);
+      //ceb.hash.add((int) value);
 		}
 
 		@Override
@@ -200,17 +198,14 @@ public class UDAFGetUniqueId implements GenericUDAFResolver2 {
 			return new LongWritable(ceb.hash.size());
 		}
 
-		static class CntAggregationBuffer implements AggregationBuffer {
+		static class CntAggregationBuffer extends AbstractAggregationBuffer { //implements AggregationBuffer {
 			//TLongHashSet hash = new TLongHashSet();
 
       TIntHashSet hash = null;
 
-      void init(int size) {
-        if (size == 0) {
-          hash = new TIntHashSet();
-        } else {
-          hash = new TIntHashSet(size);
-        }
+      void init() {
+        // TODO: Initialize here!
+
       }
 		}
 	}

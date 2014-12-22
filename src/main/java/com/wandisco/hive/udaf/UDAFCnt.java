@@ -6,6 +6,7 @@ import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
+import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFResolver2;
@@ -29,7 +30,7 @@ import java.util.List;
 
 @Description(name = "count_distinct_long", value = "_FUNC_(x) - Distinct count for long values", extended = "Example:"
 		+ "\n> SELECT count_distinct(values) FROM src")
-public class UDAFCnt implements GenericUDAFResolver2 {
+public class UDAFCnt extends AbstractGenericUDAFResolver { //implements GenericUDAFResolver2 {
 
 	static final Log LOG = LogFactory.getLog(UDAFCnt.class.getName());
 
@@ -187,7 +188,7 @@ public class UDAFCnt implements GenericUDAFResolver2 {
 			return new LongWritable(ceb.hash.size());
 		}
 
-		static class CntAggregationBuffer implements AggregationBuffer {
+		static class CntAggregationBuffer extends AbstractAggregationBuffer { //implements AggregationBuffer {
 			THashSet hash = new THashSet();
 
 		}
