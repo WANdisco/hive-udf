@@ -144,7 +144,8 @@ public class UDAFCntBitSet extends AbstractGenericUDAFResolver { //implements Ge
 					inputPrimitiveOI, ObjectInspectorCopyOption.JAVA);
 
 			long value = Math.abs((Long) x - baseValue);
-      ceb.set.set((int) value);
+			if(value > 0 && value < Integer.MAX_VALUE)
+      	ceb.set.set((int) value);
 		}
 
 		@Override
