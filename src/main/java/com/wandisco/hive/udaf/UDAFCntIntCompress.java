@@ -35,9 +35,12 @@ import java.util.List;
 
 @Description(name = "count_distinct_int", value = "_FUNC_(x) - Distinct count for long values", extended = "Example:"
 		+ "\n> SELECT count_distinct_int(values) FROM src")
-public class UDAFCntIntCompress extends AbstractGenericUDAFResolver { //implements GenericUDAFResolver2 {
+public class UDAFCntIntCompress extends AbstractGenericUDAFResolver { // implements
+																		// GenericUDAFResolver2
+																		// {
 
-	static final Log LOG = LogFactory.getLog(UDAFCntIntCompress.class.getName());
+	static final Log LOG = LogFactory
+			.getLog(UDAFCntIntCompress.class.getName());
 
 	@Override
 	public GenericUDAFEvaluator getEvaluator(GenericUDAFParameterInfo info)
@@ -221,8 +224,8 @@ public class UDAFCntIntCompress extends AbstractGenericUDAFResolver { //implemen
 				ObjectInputStream oi = new ObjectInputStream(bais);
 				hh = (int[]) oi.readObject();
 				if (hh != null && hh.length >= 0) {
-					int[] recovered = new int[hh.length*30];
-//          Arrays.fill(recovered, -1);
+					int[] recovered = new int[hh.length * 30];
+					// Arrays.fill(recovered, -1);
 
 					IntWrapper recoffset = new IntWrapper(0);
 					codec.uncompress(hh, new IntWrapper(0), hh.length,
@@ -232,11 +235,11 @@ public class UDAFCntIntCompress extends AbstractGenericUDAFResolver { //implemen
 
 						hh1.addAll(recovered);
 					}
-				
-				hh = null;
-				recovered = null;
-				recoffset = null;
-				codec = null;
+
+					hh = null;
+					recovered = null;
+					recoffset = null;
+					codec = null;
 				}
 				// hh = (TIntHashSet)oi.readObject();
 			} catch (Exception e) {
@@ -244,7 +247,7 @@ public class UDAFCntIntCompress extends AbstractGenericUDAFResolver { //implemen
 				throw new HiveException(e);
 			}
 			mergeHashSets(hh1, ceb);
-      ceb.hash.remove(0);
+			ceb.hash.remove(0);
 		}
 
 		private void mergeHashSets(TIntHashSet hh, CntAggregationBuffer ceb) {
@@ -270,7 +273,9 @@ public class UDAFCntIntCompress extends AbstractGenericUDAFResolver { //implemen
 			return new LongWritable(ceb.hash.size());
 		}
 
-		static class CntAggregationBuffer extends AbstractAggregationBuffer { //implements AggregationBuffer {
+		static class CntAggregationBuffer extends AbstractAggregationBuffer { // implements
+																				// AggregationBuffer
+																				// {
 			// TLongHashSet hash = new TLongHashSet();
 
 			TIntHashSet hash = null;

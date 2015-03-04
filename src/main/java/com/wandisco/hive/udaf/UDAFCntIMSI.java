@@ -25,7 +25,9 @@ import java.util.List;
 
 @Description(name = "count_distinct_imsi", value = "_FUNC_(x) - Distinct count for long values", extended = "Example:"
 		+ "\n> SELECT count_distinct_imsi(values) FROM src")
-public class UDAFCntIMSI extends AbstractGenericUDAFResolver { //implements GenericUDAFResolver2 {
+public class UDAFCntIMSI extends AbstractGenericUDAFResolver { // implements
+																// GenericUDAFResolver2
+																// {
 
 	static final Log LOG = LogFactory.getLog(UDAFCntIMSI.class.getName());
 
@@ -117,7 +119,7 @@ public class UDAFCntIMSI extends AbstractGenericUDAFResolver { //implements Gene
 			CntAggregationBuffer ceb = (CntAggregationBuffer) aggregationBuffer;
 			Object x = ObjectInspectorUtils.copyToStandardObject(parameters[0],
 					inputPrimitiveOI, ObjectInspectorCopyOption.JAVA);
-			ceb.hash.add(IMSI2Long((String)x));
+			ceb.hash.add(IMSI2Long((String) x));
 		}
 
 		@Override
@@ -183,37 +185,37 @@ public class UDAFCntIMSI extends AbstractGenericUDAFResolver { //implements Gene
 			return new LongWritable(ceb.hash.size());
 		}
 
-		static class CntAggregationBuffer extends AbstractAggregationBuffer { //implements AggregationBuffer {
+		static class CntAggregationBuffer extends AbstractAggregationBuffer { // implements
+																				// AggregationBuffer
+																				// {
 			TLongHashSet hash = new TLongHashSet(100000);
 
 		}
 
-    private long IMSI2Long(String imsi) {
-      long num = 0;
-      int len = imsi.length();
-      if(len < 10)
-        return -1;
-      char ch = imsi.charAt(len -1);
-      long suffix = 0;
-      String snum;
-      if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
-        suffix = Character.getNumericValue(ch);
-        snum = imsi.substring(0, len-1);
-      } else {
-        snum = imsi;
-      }
+		private long IMSI2Long(String imsi) {
+			long num = 0;
+			int len = imsi.length();
+			if (len < 10)
+				return -1;
+			char ch = imsi.charAt(len - 1);
+			long suffix = 0;
+			String snum;
+			if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
+				suffix = Character.getNumericValue(ch);
+				snum = imsi.substring(0, len - 1);
+			} else {
+				snum = imsi;
+			}
 
-      try {
-        num = Long.parseLong(snum);
-      } catch(Exception e) {
-        System.err.println("Can not parse num:" + snum);
-        num = 0;
-      }
+			try {
+				num = Long.parseLong(snum);
+			} catch (Exception e) {
+				System.err.println("Can not parse num:" + snum);
+				num = 0;
+			}
 
-      return num*100+suffix;
-    }
-
-
+			return num * 100 + suffix;
+		}
 
 	}
 }

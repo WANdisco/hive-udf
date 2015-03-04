@@ -9,7 +9,6 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
-import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFResolver2;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils.ObjectInspectorCopyOption;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
@@ -20,12 +19,11 @@ import org.apache.hadoop.io.LongWritable;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 
 @Description(name = "count_distinct_int", value = "_FUNC_(x) - Distinct count for long values", extended = "Example:"
 		+ "\n> SELECT count_distinct_int(values) FROM src")
-public class UDAFCntInt extends AbstractGenericUDAFResolver { //implements GenericUDAFResolver2 {
+public class UDAFCntInt extends AbstractGenericUDAFResolver { // implementsGenericUDAFResolver2
 
 	static final Log LOG = LogFactory.getLog(UDAFCntInt.class.getName());
 
@@ -34,18 +32,24 @@ public class UDAFCntInt extends AbstractGenericUDAFResolver { //implements Gener
 			throws SemanticException {
 		TypeInfo[] parameters = info.getParameters();
 
-    if (!parameters[0].getTypeName().equals("bigint") && !parameters[0].getTypeName().equals("int")) {
-      throw new SemanticException("count_distinct_int UDAF only accepts int or bigint as first parameter");
-    }
+		if (!parameters[0].getTypeName().equals("bigint")
+				&& !parameters[0].getTypeName().equals("int")) {
+			throw new SemanticException(
+					"count_distinct_int UDAF only accepts int or bigint as first parameter");
+		}
 
+		if ((parameters.length > 1)
+				&& !parameters[1].getTypeName().equals("bigint")
+				&& !parameters[1].getTypeName().equals("int")) {
+			throw new SemanticException("Base could only be bigint; Got "
+					+ parameters[1].getTypeName());
+		}
 
-    if ((parameters.length > 1) && !parameters[1].getTypeName().equals("bigint") && !parameters[1].getTypeName().equals("int")) {
-      throw new SemanticException("Base could only be bigint; Got " + parameters[1].getTypeName());
-    }
-
-    if ((parameters.length == 3) && !parameters[2].getTypeName().equals("int")) {
-      throw new SemanticException("Size could only be int; Got " + parameters[2].getTypeName());
-    }
+		if ((parameters.length == 3)
+				&& !parameters[2].getTypeName().equals("int")) {
+			throw new SemanticException("Size could only be int; Got "
+					+ parameters[2].getTypeName());
+		}
 
 		return new CountEvaluator();
 	}
@@ -57,7 +61,7 @@ public class UDAFCntInt extends AbstractGenericUDAFResolver { //implements Gener
 	}
 
 	public static class CountEvaluator extends GenericUDAFEvaluator {
-		//private Object[] partialResult;
+		// private Object[] partialResult;
 
 		// inputs
 		PrimitiveObjectInspector inputPrimitiveOI;
@@ -65,32 +69,32 @@ public class UDAFCntInt extends AbstractGenericUDAFResolver { //implements Gener
 		// intermediate results
 		StandardListObjectInspector partialOI;
 
-    private long baseValue = 0;
-    private int baseSize = 0;
+		private long baseValue = 0;
+		private int baseSize = 0;
 
 		public ObjectInspector init(Mode m, ObjectInspector[] parameters)
 				throws HiveException {
 			super.init(m, parameters);
 
+			if (parameters.length > 1) {
+				if (!(parameters[1] instanceof ConstantObjectInspector)) {
+					throw new HiveException("Base Value must be a constant");
+				}
+				ConstantObjectInspector baseOI = (ConstantObjectInspector) parameters[1];
+				this.baseValue = ((LongWritable) baseOI
+						.getWritableConstantValue()).get();
 
-      if (parameters.length > 1) {
-        if (!( parameters[1] instanceof ConstantObjectInspector ) ) {
-          throw new HiveException("Base Value must be a constant");
-        }
-        ConstantObjectInspector baseOI = (ConstantObjectInspector) parameters[1];
-        this.baseValue = ((LongWritable) baseOI.getWritableConstantValue()).get();
-
-        if (parameters.length == 3) {
-          ConstantObjectInspector sizeOI = (ConstantObjectInspector) parameters[2];
-          this.baseSize = ((IntWritable) sizeOI.getWritableConstantValue()).get();
-        } else {
-          this.baseSize = 0;
-        }
-      } else {
-        this.baseValue = 0;
-        this.baseSize = 0;
-      }
-
+				if (parameters.length == 3) {
+					ConstantObjectInspector sizeOI = (ConstantObjectInspector) parameters[2];
+					this.baseSize = ((IntWritable) sizeOI
+							.getWritableConstantValue()).get();
+				} else {
+					this.baseSize = 0;
+				}
+			} else {
+				this.baseValue = 0;
+				this.baseSize = 0;
+			}
 
 			if (m == Mode.PARTIAL1 || m == Mode.COMPLETE) {
 				assert (parameters.length == 1);
@@ -119,8 +123,8 @@ public class UDAFCntInt extends AbstractGenericUDAFResolver { //implements Gener
 		@Override
 		public AggregationBuffer getNewAggregationBuffer() throws HiveException {
 			CntAggregationBuffer ceb = new CntAggregationBuffer();
-      ceb.init(baseSize);
-			//reset(ceb);
+			ceb.init(baseSize);
+			// reset(ceb);
 			return ceb;
 		}
 
@@ -141,7 +145,7 @@ public class UDAFCntInt extends AbstractGenericUDAFResolver { //implements Gener
 					inputPrimitiveOI, ObjectInspectorCopyOption.JAVA);
 
 			long value = Math.abs((Long) x - baseValue);
-      ceb.hash.add((int) value);
+			ceb.hash.add((int) value);
 		}
 
 		@Override
@@ -177,27 +181,25 @@ public class UDAFCntInt extends AbstractGenericUDAFResolver { //implements Gener
 				ByteArrayInputStream bais = new ByteArrayInputStream(
 						partialBytes.getBytes());
 				ObjectInputStream oi = new ObjectInputStream(bais);
-        hh = (TIntHashSet)oi.readObject();
+				hh = (TIntHashSet) oi.readObject();
 			} catch (Exception e) {
 				throw new HiveException(e.getMessage());
 			}
-      mergeHashSets(hh, ceb);
+			mergeHashSets(hh, ceb);
 		}
 
-
-    private void mergeHashSets(TIntHashSet hh, CntAggregationBuffer ceb) {
-      if (ceb.hash.size() == 0) {
-        ceb.hash = hh;
-        return;
-      }
-      if (ceb.hash.size() > hh.size()) {
-        ceb.hash.addAll(hh);
-      } else {
-        hh.addAll(ceb.hash);
-        ceb.hash = hh;
-      }
-    }
-
+		private void mergeHashSets(TIntHashSet hh, CntAggregationBuffer ceb) {
+			if (ceb.hash.size() == 0) {
+				ceb.hash = hh;
+				return;
+			}
+			if (ceb.hash.size() > hh.size()) {
+				ceb.hash.addAll(hh);
+			} else {
+				hh.addAll(ceb.hash);
+				ceb.hash = hh;
+			}
+		}
 
 		@Override
 		public Object terminate(AggregationBuffer aggregationBuffer)
@@ -209,18 +211,18 @@ public class UDAFCntInt extends AbstractGenericUDAFResolver { //implements Gener
 			return new LongWritable(ceb.hash.size());
 		}
 
-		static class CntAggregationBuffer extends AbstractAggregationBuffer { //implements AggregationBuffer {
-			//TLongHashSet hash = new TLongHashSet();
+		static class CntAggregationBuffer extends AbstractAggregationBuffer { // implements
+																				// AggregationBuffer
 
-      TIntHashSet hash = null;
+			TIntHashSet hash = null;
 
-      void init(int size) {
-        if (size == 0) {
-          hash = new TIntHashSet();
-        } else {
-          hash = new TIntHashSet(size);
-        }
-      }
+			void init(int size) {
+				if (size == 0) {
+					hash = new TIntHashSet();
+				} else {
+					hash = new TIntHashSet(size);
+				}
+			}
 		}
 	}
 }

@@ -27,29 +27,39 @@ import java.util.List;
 
 @Description(name = "count_distinct_bitset", value = "_FUNC_(x) - Distinct count for long values", extended = "Example:"
 		+ "\n> SELECT count_distinct_bitset(values) FROM src")
-public class UDAFCntSparseBitSet extends AbstractGenericUDAFResolver { //implements GenericUDAFResolver2 {
+public class UDAFCntSparseBitSet extends AbstractGenericUDAFResolver { // implements
+																		// GenericUDAFResolver2
+																		// {
 
-	static final Log LOG = LogFactory.getLog(UDAFCntSparseBitSet.class.getName());
-  //public static final int MAX_VALUE = 100000000;
-  //public static final int NUM_LONGS = MAX_VALUE >> 6;
+	static final Log LOG = LogFactory.getLog(UDAFCntSparseBitSet.class
+			.getName());
+
+	// public static final int MAX_VALUE = 100000000;
+	// public static final int NUM_LONGS = MAX_VALUE >> 6;
 
 	@Override
 	public GenericUDAFEvaluator getEvaluator(GenericUDAFParameterInfo info)
 			throws SemanticException {
 		TypeInfo[] parameters = info.getParameters();
 
-    if(!parameters[0].getTypeName().equals("bigint")) {
-      throw new SemanticException("count_distinct_bitset UDAF only accepts bigint as first parameter");
-    }
+		if (!parameters[0].getTypeName().equals("bigint")) {
+			throw new SemanticException(
+					"count_distinct_bitset UDAF only accepts bigint as first parameter");
+		}
 
+		if ((parameters.length > 1)
+				&& !parameters[1].getTypeName().equals("bigint")
+				&& !parameters[1].getTypeName().equals("int")) {
+			throw new SemanticException(
+					"Base could only be int or bigint; Got "
+							+ parameters[1].getTypeName());
+		}
 
-    if((parameters.length > 1) && !parameters[1].getTypeName().equals("bigint") && !parameters[1].getTypeName().equals("int")) {
-      throw new SemanticException("Base could only be int or bigint; Got " + parameters[1].getTypeName());
-    }
-
-    if((parameters.length == 3) && !parameters[2].getTypeName().equals("int")) {
-      throw new SemanticException("Size could only be int; Got " + parameters[2].getTypeName());
-    }
+		if ((parameters.length == 3)
+				&& !parameters[2].getTypeName().equals("int")) {
+			throw new SemanticException("Size could only be int; Got "
+					+ parameters[2].getTypeName());
+		}
 
 		return new CountEvaluator();
 	}
@@ -61,7 +71,7 @@ public class UDAFCntSparseBitSet extends AbstractGenericUDAFResolver { //impleme
 	}
 
 	public static class CountEvaluator extends GenericUDAFEvaluator {
-		//private Object[] partialResult;
+		// private Object[] partialResult;
 
 		// inputs
 		PrimitiveObjectInspector inputPrimitiveOI;
@@ -69,32 +79,32 @@ public class UDAFCntSparseBitSet extends AbstractGenericUDAFResolver { //impleme
 		// intermediate results
 		StandardListObjectInspector partialOI;
 
-    private long baseValue = 0;
-    private int baseSize = 0;
+		private long baseValue = 0;
+		private int baseSize = 0;
 
 		public ObjectInspector init(Mode m, ObjectInspector[] parameters)
 				throws HiveException {
 			super.init(m, parameters);
 
+			if (parameters.length > 1) {
+				if (!(parameters[1] instanceof ConstantObjectInspector)) {
+					throw new HiveException("Base Value must be a constant");
+				}
+				ConstantObjectInspector baseOI = (ConstantObjectInspector) parameters[1];
+				this.baseValue = ((LongWritable) baseOI
+						.getWritableConstantValue()).get();
 
-      if(parameters.length > 1) {
-        if(!( parameters[1] instanceof ConstantObjectInspector ) ) {
-          throw new HiveException("Base Value must be a constant");
-        }
-        ConstantObjectInspector baseOI = (ConstantObjectInspector) parameters[1];
-        this.baseValue = ((LongWritable) baseOI.getWritableConstantValue()).get();
-
-        if(parameters.length == 3) {
-          ConstantObjectInspector sizeOI = (ConstantObjectInspector) parameters[2];
-          this.baseSize = ((IntWritable) sizeOI.getWritableConstantValue()).get();
-        } else {
-          this.baseSize = 0;
-        }
-      } else {
-        this.baseValue = 0;
-        this.baseSize = 0;
-      }
-
+				if (parameters.length == 3) {
+					ConstantObjectInspector sizeOI = (ConstantObjectInspector) parameters[2];
+					this.baseSize = ((IntWritable) sizeOI
+							.getWritableConstantValue()).get();
+				} else {
+					this.baseSize = 0;
+				}
+			} else {
+				this.baseValue = 0;
+				this.baseSize = 0;
+			}
 
 			if (m == Mode.PARTIAL1 || m == Mode.COMPLETE) {
 				assert (parameters.length == 1);
@@ -123,7 +133,7 @@ public class UDAFCntSparseBitSet extends AbstractGenericUDAFResolver { //impleme
 		@Override
 		public AggregationBuffer getNewAggregationBuffer() throws HiveException {
 			CntAggregationBuffer ceb = new CntAggregationBuffer();
-      ceb.init(baseSize);
+			ceb.init(baseSize);
 			reset(ceb);
 			return ceb;
 		}
@@ -145,9 +155,9 @@ public class UDAFCntSparseBitSet extends AbstractGenericUDAFResolver { //impleme
 					inputPrimitiveOI, ObjectInspectorCopyOption.JAVA);
 
 			long value = Math.abs((Long) x - baseValue);
-      if(value > Integer.MAX_VALUE)
-        value = Integer.MAX_VALUE-1;
-      ceb.set.set((int) value);
+			if (value > Integer.MAX_VALUE)
+				value = Integer.MAX_VALUE - 1;
+			ceb.set.set((int) value);
 		}
 
 		@Override
@@ -183,11 +193,11 @@ public class UDAFCntSparseBitSet extends AbstractGenericUDAFResolver { //impleme
 				ByteArrayInputStream bais = new ByteArrayInputStream(
 						partialBytes.getBytes());
 				ObjectInputStream oi = new ObjectInputStream(bais);
-        mSet = (SparseBitSet)oi.readObject();
+				mSet = (SparseBitSet) oi.readObject();
 			} catch (Exception e) {
 				throw new HiveException(e.getMessage());
 			}
-      ceb.set.or(mSet);
+			ceb.set.or(mSet);
 		}
 
 		@Override
@@ -200,58 +210,44 @@ public class UDAFCntSparseBitSet extends AbstractGenericUDAFResolver { //impleme
 			return new LongWritable(ceb.set.cardinality());
 		}
 
-		static class CntAggregationBuffer extends AbstractAggregationBuffer { //implements AggregationBuffer {
-			//TLongHashSet hash = new TLongHashSet();
+		static class CntAggregationBuffer extends AbstractAggregationBuffer { // implements
+																				// AggregationBuffer
+																				// {
+			// TLongHashSet hash = new TLongHashSet();
 
-      SparseBitSet set = null;
+			SparseBitSet set = null;
 
-      void init(int size) {
-        if(size == 0) {
-          set = new SparseBitSet();
-        } else {
-          set = new SparseBitSet(size);
-        }
-      }
+			void init(int size) {
+				if (size == 0) {
+					set = new SparseBitSet();
+				} else {
+					set = new SparseBitSet(size);
+				}
+			}
 
-
-/*
-      long [] words = new long[NUM_LONGS];
-
-
-
-      void setBit(int bit) throws SemanticException {
-        if(bit > MAX_VALUE)
-          throw new SemanticException("Value exceeded max value = " + bit);
-        int widx = bit >> 6;
-        words[widx] |= (1L << bit);
-      }
-
-      boolean getBit(int bit) throws SemanticException {
-        int widx = bit >> 6;
-        return (widx < MAX_VALUE)
-            && ((words[widx] & (1L << bit)) != 0);
-      }
-
-      void mergeSets(long[] mWords) {
-        for(int i=0; i< NUM_LONGS; ++i) {
-          words[i] |= mWords[i];
-        }
-      }
-
-      int cardinality() {
-        int sum = 0;
-        for(int i=0; i< NUM_LONGS; ++i) {
-          sum += Long.bitCount(words[i]);
-        }
-        return sum;
-      }
-
-      void clear() {
-        for(int i=0; i < NUM_LONGS; ++i) {
-          words[i] = 0;
-        }
-      }
-*/
+			/*
+			 * long [] words = new long[NUM_LONGS];
+			 * 
+			 * 
+			 * 
+			 * void setBit(int bit) throws SemanticException { if(bit >
+			 * MAX_VALUE) throw new
+			 * SemanticException("Value exceeded max value = " + bit); int widx
+			 * = bit >> 6; words[widx] |= (1L << bit); }
+			 * 
+			 * boolean getBit(int bit) throws SemanticException { int widx = bit
+			 * >> 6; return (widx < MAX_VALUE) && ((words[widx] & (1L << bit))
+			 * != 0); }
+			 * 
+			 * void mergeSets(long[] mWords) { for(int i=0; i< NUM_LONGS; ++i) {
+			 * words[i] |= mWords[i]; } }
+			 * 
+			 * int cardinality() { int sum = 0; for(int i=0; i< NUM_LONGS; ++i)
+			 * { sum += Long.bitCount(words[i]); } return sum; }
+			 * 
+			 * void clear() { for(int i=0; i < NUM_LONGS; ++i) { words[i] = 0; }
+			 * }
+			 */
 		}
 	}
 }

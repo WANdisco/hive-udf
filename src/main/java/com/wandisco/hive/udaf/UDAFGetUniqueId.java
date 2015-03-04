@@ -25,7 +25,9 @@ import java.util.List;
 
 @Description(name = "get_unique_id", value = "_FUNC_(x) - Generate unique long ID for given field in the table", extended = "Example:"
 		+ "\n> SELECT get_unique_id(values) FROM src")
-public class UDAFGetUniqueId extends AbstractGenericUDAFResolver { //implements GenericUDAFResolver2 {
+public class UDAFGetUniqueId extends AbstractGenericUDAFResolver { // implements
+																	// GenericUDAFResolver2
+																	// {
 
 	static final Log LOG = LogFactory.getLog(UDAFGetUniqueId.class.getName());
 
@@ -34,17 +36,22 @@ public class UDAFGetUniqueId extends AbstractGenericUDAFResolver { //implements 
 			throws SemanticException {
 		TypeInfo[] parameters = info.getParameters();
 
-    if (!parameters[0].getTypeName().equals("bigint") && !parameters[0].getTypeName().equals("int")) {
-      throw new SemanticException("get_unique_id UDAF only accepts int or bigint as first parameter");
-    }
+		if (!parameters[0].getTypeName().equals("bigint")
+				&& !parameters[0].getTypeName().equals("int")) {
+			throw new SemanticException(
+					"get_unique_id UDAF only accepts int or bigint as first parameter");
+		}
 
-    if ((parameters.length > 1) && !parameters[1].getTypeName().equals("string")) {
-      throw new SemanticException("Second parameter could only be string; Got " + parameters[1].getTypeName());
-    }
+		if ((parameters.length > 1)
+				&& !parameters[1].getTypeName().equals("string")) {
+			throw new SemanticException(
+					"Second parameter could only be string; Got "
+							+ parameters[1].getTypeName());
+		}
 
-    if ((parameters.length > 2)) {
-      throw new SemanticException("Only two parameters supported");
-    }
+		if ((parameters.length > 2)) {
+			throw new SemanticException("Only two parameters supported");
+		}
 
 		return new CountEvaluator();
 	}
@@ -55,32 +62,28 @@ public class UDAFGetUniqueId extends AbstractGenericUDAFResolver { //implements 
 		return new CountEvaluator();
 	}
 
-
 	public static class CountEvaluator extends GenericUDAFEvaluator {
 		PrimitiveObjectInspector inputPrimitiveOI;
 
 		// intermediate results
 		StandardListObjectInspector partialOI;
 
-    String imsi = null;
-
+		String imsi = null;
 
 		public ObjectInspector init(Mode m, ObjectInspector[] parameters)
 				throws HiveException {
 			super.init(m, parameters);
 
+			if (parameters.length == 2) {
+				if (!(parameters[1] instanceof StringObjectInspector)) {
+					throw new HiveException("Base Value must be a string");
+				}
+				StringObjectInspector soi = (StringObjectInspector) parameters[1];
+				this.imsi = (String) soi.getPrimitiveJavaObject(parameters[1]);
 
-      if (parameters.length == 2) {
-        if (!( parameters[1] instanceof StringObjectInspector) ) {
-          throw new HiveException("Base Value must be a string");
-        }
-        StringObjectInspector soi = (StringObjectInspector) parameters[1];
-        this.imsi = (String)soi.getPrimitiveJavaObject(parameters[1]);
-
-      } else {
-        throw new HiveException("Only 2 parameters are supported");
-      }
-
+			} else {
+				throw new HiveException("Only 2 parameters are supported");
+			}
 
 			if (m == Mode.PARTIAL1 || m == Mode.COMPLETE) {
 				ObjectInspector.Category cat = parameters[0].getCategory();
@@ -108,8 +111,8 @@ public class UDAFGetUniqueId extends AbstractGenericUDAFResolver { //implements 
 		@Override
 		public AggregationBuffer getNewAggregationBuffer() throws HiveException {
 			CntAggregationBuffer ceb = new CntAggregationBuffer();
-      ceb.init();
-			//reset(ceb);
+			ceb.init();
+			// reset(ceb);
 			return ceb;
 		}
 
@@ -129,8 +132,8 @@ public class UDAFGetUniqueId extends AbstractGenericUDAFResolver { //implements 
 			Object x = ObjectInspectorUtils.copyToStandardObject(parameters[0],
 					inputPrimitiveOI, ObjectInspectorCopyOption.JAVA);
 
-			//long value = Math.abs((Long) x - baseValue);
-      //ceb.hash.add((int) value);
+			// long value = Math.abs((Long) x - baseValue);
+			// ceb.hash.add((int) value);
 		}
 
 		@Override
@@ -166,27 +169,25 @@ public class UDAFGetUniqueId extends AbstractGenericUDAFResolver { //implements 
 				ByteArrayInputStream bais = new ByteArrayInputStream(
 						partialBytes.getBytes());
 				ObjectInputStream oi = new ObjectInputStream(bais);
-        hh = (TIntHashSet)oi.readObject();
+				hh = (TIntHashSet) oi.readObject();
 			} catch (Exception e) {
 				throw new HiveException(e.getMessage());
 			}
-      mergeHashSets(hh, ceb);
+			mergeHashSets(hh, ceb);
 		}
 
-
-    private void mergeHashSets(TIntHashSet hh, CntAggregationBuffer ceb) {
-      if (ceb.hash.size() == 0) {
-        ceb.hash = hh;
-        return;
-      }
-      if (ceb.hash.size() > hh.size()) {
-        ceb.hash.addAll(hh);
-      } else {
-        hh.addAll(ceb.hash);
-        ceb.hash = hh;
-      }
-    }
-
+		private void mergeHashSets(TIntHashSet hh, CntAggregationBuffer ceb) {
+			if (ceb.hash.size() == 0) {
+				ceb.hash = hh;
+				return;
+			}
+			if (ceb.hash.size() > hh.size()) {
+				ceb.hash.addAll(hh);
+			} else {
+				hh.addAll(ceb.hash);
+				ceb.hash = hh;
+			}
+		}
 
 		@Override
 		public Object terminate(AggregationBuffer aggregationBuffer)
@@ -198,15 +199,17 @@ public class UDAFGetUniqueId extends AbstractGenericUDAFResolver { //implements 
 			return new LongWritable(ceb.hash.size());
 		}
 
-		static class CntAggregationBuffer extends AbstractAggregationBuffer { //implements AggregationBuffer {
-			//TLongHashSet hash = new TLongHashSet();
+		static class CntAggregationBuffer extends AbstractAggregationBuffer { // implements
+																				// AggregationBuffer
+																				// {
+			// TLongHashSet hash = new TLongHashSet();
 
-      TIntHashSet hash = null;
+			TIntHashSet hash = null;
 
-      void init() {
-        // TODO: Initialize here!
+			void init() {
+				// TODO: Initialize here!
 
-      }
+			}
 		}
 	}
 }

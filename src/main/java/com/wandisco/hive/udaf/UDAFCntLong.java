@@ -23,9 +23,12 @@ import org.apache.hadoop.io.LongWritable;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+
 @Description(name = "count_distinct_long", value = "_FUNC_(x) - Distinct count for long values", extended = "Example:"
 		+ "\n> SELECT count_distinct(values) FROM src")
-public class UDAFCntLong  extends AbstractGenericUDAFResolver { //implements GenericUDAFResolver2 {
+public class UDAFCntLong extends AbstractGenericUDAFResolver { // implements
+																// GenericUDAFResolver2
+																// {
 
 	static final Log LOG = LogFactory.getLog(UDAFCntLong.class.getName());
 
@@ -54,7 +57,7 @@ public class UDAFCntLong  extends AbstractGenericUDAFResolver { //implements Gen
 	}
 
 	public static class CountEvaluator extends GenericUDAFEvaluator {
-		//private Object[] partialResult;
+		// private Object[] partialResult;
 
 		// inputs
 		PrimitiveObjectInspector inputPrimitiveOI;
@@ -65,9 +68,9 @@ public class UDAFCntLong  extends AbstractGenericUDAFResolver { //implements Gen
 		public ObjectInspector init(Mode m, ObjectInspector[] parameters)
 				throws HiveException {
 			super.init(m, parameters);
-//			partialResult = new Object[2];
-//			partialResult[0] = new LongWritable(0);
-//			partialResult[1] = new LongWritable(0);
+			// partialResult = new Object[2];
+			// partialResult[0] = new LongWritable(0);
+			// partialResult[1] = new LongWritable(0);
 			if (m == Mode.PARTIAL1 || m == Mode.COMPLETE) {
 				assert (parameters.length == 1);
 				ObjectInspector.Category cat = parameters[0].getCategory();
@@ -181,7 +184,9 @@ public class UDAFCntLong  extends AbstractGenericUDAFResolver { //implements Gen
 			return new LongWritable(ceb.hash.size());
 		}
 
-		static class CntAggregationBuffer extends AbstractAggregationBuffer { //implements AggregationBuffer {
+		static class CntAggregationBuffer extends AbstractAggregationBuffer { // implements
+																				// AggregationBuffer
+																				// {
 			TLongHashSet hash = new TLongHashSet();
 
 		}
