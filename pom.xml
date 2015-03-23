@@ -103,6 +103,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+							<dependencyReducedPomLocation>${basedir}/target/dependency-reduced-pom.xml</dependencyReducedPomLocation>
                             <artifactSet>
                                 <includes>
                                     <include>com.clearspring.analytics:stream</include>
