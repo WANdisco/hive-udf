@@ -40,7 +40,7 @@ public class StringInitCap extends StringUnaryUDF {
         if (s == null) {
           return null;
         }
-        t.set(WordUtils.capitalizeFully(s.toString()));
+        t.set(WordUtils.capitalizeFully(s.toString(), new char[] {'-',',',' '}));
         return t;
       }
     });
