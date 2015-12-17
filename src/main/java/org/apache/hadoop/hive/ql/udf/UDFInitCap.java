@@ -39,7 +39,7 @@ public class UDFInitCap extends UDF {
 			return null;
 		}
 
-		t.set(WordUtils.capitalizeFully(s.toString()));
+		t.set(WordUtils.capitalizeFully(s.toString(),new char[] {'-',',',' '}));
 		return t;
 	}
 }
