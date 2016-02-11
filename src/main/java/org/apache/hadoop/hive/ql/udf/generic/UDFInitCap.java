@@ -26,7 +26,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.exec.vector.VectorizedExpressions;
-import org.apache.hadoop.hive.ql.exec.vector.expressions.StringInitCap;
+import org.apache.hadoop.hive.ql.exec.vector.expressions.ExtendedStringInitCap;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
@@ -46,8 +46,8 @@ import org.apache.hadoop.io.Text;
     value = "_FUNC_(str) - Returns str, with the first letter of each word in uppercase,"
         + " all other letters in lowercase. Words are delimited by white space.",
     extended = "Example:\n" + " > SELECT _FUNC_('tHe soap') FROM src LIMIT 1;\n" + " 'The Soap'")
-@VectorizedExpressions({ StringInitCap.class })
-public class GenericUDFInitCap extends GenericUDF {
+@VectorizedExpressions({ ExtendedStringInitCap.class })
+public class UDFInitCap extends GenericUDF {
   private transient PrimitiveCategory[] inputTypes = new PrimitiveCategory[1];
   private transient Converter[] converters = new Converter[1];
   private final Text output = new Text();
@@ -186,7 +186,7 @@ public class GenericUDFInitCap extends GenericUDF {
       return null;
     }
 
-    String valCap = WordUtils.capitalizeFully(val);
+    String valCap = WordUtils.capitalizeFully(val, new char[] { '-', ',', ' ' });
     output.set(valCap);
     return output;
   }

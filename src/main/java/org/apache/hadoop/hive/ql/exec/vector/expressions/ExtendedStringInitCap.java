@@ -22,15 +22,18 @@ import org.apache.commons.lang.WordUtils;
 import org.apache.hadoop.io.Text;
 
 /**
- * Returns str, with the first letter of each word in uppercase, all other
- * letters in lowercase. Words are delimited by white space. e.g. initcap('the
- * soap') returns 'The Soap'
+ * Returns str, with the first letter of each word in uppercase, all other letters in lowercase.
+ * Words are delimited by white space. e.g. initcap('the soap') returns 'The Soap'
+ * 
  * Extends {@link StringUnaryUDF}.
+ * 
+ * An original version is {@link org.apache.hadoop.hive.ql.exec.vector.expressions.StringInitCap},
+ * this one extends functionality, using '-', ',', ' ' as word delimiters
  */
-public class StringInitCap extends StringUnaryUDF {
+public class ExtendedStringInitCap extends StringUnaryUDF {
   private static final long serialVersionUID = 1L;
 
-  public StringInitCap(int colNum, int outputColumn) {
+  public ExtendedStringInitCap(int colNum, int outputColumn) {
     super(colNum, outputColumn, new IUDFUnaryString() {
 
       Text t = new Text();
@@ -40,13 +43,13 @@ public class StringInitCap extends StringUnaryUDF {
         if (s == null) {
           return null;
         }
-        t.set(WordUtils.capitalizeFully(s.toString(), new char[] {'-',',',' '}));
+        t.set(WordUtils.capitalizeFully(s.toString(), new char[] {'-', ',', ' '}));
         return t;
       }
     });
   }
 
-  public StringInitCap() {
+  public ExtendedStringInitCap() {
     super();
   }
 }
